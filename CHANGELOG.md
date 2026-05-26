@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 - Integrated a comprehensive command-specific help system: appending `?` to any CLI command (e.g. `./my_cal add "?"`) prints premium cyan headers, detailed usage descriptions, flags, arguments, and CLI examples.
 - Enhanced test coverage by adding robust unit test suites (`test_set_default_calendar_success`, `test_quick_add_event_success`, `test_add_full_event_success`, `test_show_detailed_help`) with Net::HTTP stubbing.
 - Added off-line test execution command `./my_cal test` which runs the complete Minitest suite instantly.
+- Added a `deps` command checking for both Ruby gems and system binaries, providing command guides on how to install any missing ones on Debian-derived systems.
+- Implemented startup dependency resilience by wrapping the `rainbow` gem load in a `LoadError` rescue block with a fallback mock presenter, ensuring that `deps` command works flawlessly even if dependencies are missing.
 
 ### Changed
 - Replaced all standard red (`.red`) colors across warnings, errors, and high-priority rating highlights with bright bold red (`.red.bright`) to optimize readability on dark backgrounds.
