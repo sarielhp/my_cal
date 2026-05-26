@@ -822,4 +822,33 @@ class TestMyCal < Minitest::Test
     assert_match /Show all calendars and status/, out
     assert_match /Quick-add an event to the default calendar using natural language/, out
   end
+
+  def test_check_dependencies_satisfied
+    # Stub Gem::Specification and system calls to mock fully satisfied dependencies
+    Gem::Specification.stub :find_by_name, true do
+      self.stub :system, true do
+        out, _ = capture_io { check_dependencies }
+        assert_match /Checking Program Dependencies/, out
+        assert_match /Rainbow Ruby Gem: Installed/, out
+        assert_match /System Command 'python3': Installed/, out
+        assert_match /All dependencies are successfully satisfied!/, out
+      end
+    end
+  end
+
+  def test_check_dependencies_missing
+    # Stub Gem::Specification to raise MissingSpecError and system to return false to mock missing dependencies
+    error_mock = lambda { |name| raise Gem::MissingSpecError.new(Gem::Specification.new, "rainbow") }
+    Gem::Specification.stub :find_by_name, error_mock do
+      self.stub :system, false do
+        out, _ = capture_io { check_dependencies }
+        assert_match /Checking Program Dependencies/, out
+        assert_match /Rainbow Ruby Gem:.*Missing/, out
+        assert_match /System Command 'python3':.*Missing/, out
+        assert_match /To fix: Run 'sudo apt install python3'/, out
+        assert_match /To fix: Run 'sudo gem install rainbow'/, out
+        assert_match /Some dependencies are missing/, out
+      end
+    end
+  end
 end

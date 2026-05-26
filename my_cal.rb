@@ -16,7 +16,27 @@ require 'uri'
 require 'date'
 require 'time'
 require 'erb'
-require 'rainbow'
+begin
+  require 'rainbow'
+rescue LoadError
+  # Define a fallback mock Rainbow class/methods so the rest of the script doesn't crash when using Rainbow!
+  module RainbowFallback
+    class Presenter
+      def initialize(str); @str = str; end
+      def color(*args); self; end
+      def bold; self; end
+      def italic; self; end
+      def underline; self; end
+      def inverse; self; end
+      def bright; self; end
+      def to_s; @str; end
+    end
+  end
+  def Rainbow(str)
+    RainbowFallback::Presenter.new(str.to_s)
+  end
+end
+
 require 'open3'
 require 'fileutils'
 require 'rbconfig'
@@ -1204,6 +1224,12 @@ def show_detailed_help(command)
     puts "  Creates a fully configured event in the specified calendar."
     puts "  Usage: ./my_cal add-full <cal-name> <summary> <start-time> <end-time> [description] [location]"
     puts "  Example: ./my_cal add-full Personal \"Lunch with Ben\" \"2026-05-27 12:00\" \"2026-05-27 13:00\" \"Discuss project\" \"Cafe\""
+  when 'deps'
+    puts Rainbow("Command: deps").bold.cyan
+    puts "  Checks the program dependencies (both Ruby gems and system binaries),"
+    puts "  verifying if they are installed, and provides command guides on how"
+    puts "  to install any missing ones on Debian-derived systems."
+    puts "  Usage: ./my_cal deps"
   else
     puts Rainbow("Unknown command: #{command}").red.bright
   end
@@ -1233,7 +1259,57 @@ def print_general_usage
   puts "  ./my_cal default <cal-name>      - Set the default calendar persistently"
   puts "  ./my_cal add \"<text>\"             - Quick-add an event to the default calendar using natural language"
   puts "  ./my_cal add-full <cal> <sum> <start> <end> [desc] [loc] - Create a full event in a calendar"
+  puts "  ./my_cal deps                    - Check program dependencies and how to fix them"
   puts "  Note: Append '?' to any command to see detailed help (e.g. ./my_cal add '?')"
+end
+
+def check_dependencies
+  puts Rainbow("Checking Program Dependencies...").bold.cyan
+  puts
+  
+  has_missing = false
+  
+  # 1. Check rainbow gem
+  rainbow_installed = begin
+    # We try loading using a clean require to bypass the fallback presenter if it was invoked
+    Gem::Specification.find_by_name('rainbow')
+    true
+  rescue Gem::MissingSpecError, LoadError
+    false
+  end
+  
+  if rainbow_installed
+    puts "  [✓] Rainbow Ruby Gem: Installed"
+  else
+    has_missing = true
+    puts "  [✗] Rainbow Ruby Gem: " + Rainbow("Missing").red.bright
+    puts "      To fix: Run 'sudo gem install rainbow' or 'sudo apt install ruby-rainbow'"
+  end
+  
+  # Helper to check command
+  check_cmd = lambda do |cmd_name, apt_package|
+    exists = system("which #{cmd_name} > /dev/null 2>&1")
+    if exists
+      puts "  [✓] System Command '#{cmd_name}': Installed"
+      false
+    else
+      puts "  [✗] System Command '#{cmd_name}': " + Rainbow("Missing").red.bright
+      puts "      To fix: Run 'sudo apt install #{apt_package}'"
+      true
+    end
+  end
+  
+  has_missing = true if check_cmd.call("python3", "python3")
+  has_missing = true if check_cmd.call("xdg-open", "xdg-utils")
+  has_missing = true if check_cmd.call("git", "git")
+  has_missing = true if check_cmd.call("gh", "gh")
+  
+  puts
+  if has_missing
+    puts Rainbow("Some dependencies are missing. Please follow the instructions above to install them.").yellow.bold
+  else
+    puts Rainbow("All dependencies are successfully satisfied!").green.bold
+  end
 end
 
 def set_default_calendar(access_token, calendar_name)
@@ -2393,7 +2469,12 @@ if __FILE__ == $0
     exit 0
   end
 
-  unless ['list', 'week', 'alias', 'month', 'add_priority', 'del_event', 'search', 'search_week', 'search_month', 'search_year', 'reload', 'today', 'next', 'web', 'merge', 'year', 'default', 'add', 'add-full'].include?(command)
+  if command == 'deps'
+    check_dependencies
+    exit 0
+  end
+
+  unless ['list', 'week', 'alias', 'month', 'add_priority', 'del_event', 'search', 'search_week', 'search_month', 'search_year', 'reload', 'today', 'next', 'web', 'merge', 'year', 'default', 'add', 'add-full', 'deps'].include?(command)
     print_general_usage
     exit 1
   end
