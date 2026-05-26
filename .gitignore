@@ -1,0 +1,9 @@
+# Ignore personal configurations and OAuth credentials
+credentials.json
+aliases.json
+calendar_cache.json
+config.json
+
+# Ignore generic OS files
+.DS_Store
+Thumbs.db
