@@ -1267,7 +1267,10 @@ def check_dependencies
   puts Rainbow("Checking Program Dependencies...").bold.cyan
   puts
   
-  has_missing = false
+  has_core_missing = false
+  has_dev_missing = false
+  
+  puts Rainbow("1. Core Runtime Dependencies (Required):").bold
   
   # 1. Check rainbow gem
   rainbow_installed = begin
@@ -1281,34 +1284,41 @@ def check_dependencies
   if rainbow_installed
     puts "  [✓] Rainbow Ruby Gem: Installed"
   else
-    has_missing = true
+    has_core_missing = true
     puts "  [✗] Rainbow Ruby Gem: " + Rainbow("Missing").red.bright
     puts "      To fix: Run 'sudo gem install rainbow' or 'sudo apt install ruby-rainbow'"
   end
   
   # Helper to check command
-  check_cmd = lambda do |cmd_name, apt_package|
+  check_cmd = lambda do |cmd_name, apt_package, is_core|
     exists = system("which #{cmd_name} > /dev/null 2>&1")
     if exists
       puts "  [✓] System Command '#{cmd_name}': Installed"
       false
     else
-      puts "  [✗] System Command '#{cmd_name}': " + Rainbow("Missing").red.bright
+      label = is_core ? "Required" : "Optional"
+      puts "  [✗] System Command '#{cmd_name}': " + Rainbow("Missing (#{label})").red.bright
       puts "      To fix: Run 'sudo apt install #{apt_package}'"
       true
     end
   end
   
-  has_missing = true if check_cmd.call("python3", "python3")
-  has_missing = true if check_cmd.call("xdg-open", "xdg-utils")
-  has_missing = true if check_cmd.call("git", "git")
-  has_missing = true if check_cmd.call("gh", "gh")
+  has_core_missing = true if check_cmd.call("python3", "python3", true)
+  has_core_missing = true if check_cmd.call("xdg-open", "xdg-utils", true)
   
   puts
-  if has_missing
-    puts Rainbow("Some dependencies are missing. Please follow the instructions above to install them.").yellow.bold
+  puts Rainbow("2. Development & Integration Dependencies (Optional):").bold
+  
+  has_dev_missing = true if check_cmd.call("git", "git", false)
+  has_dev_missing = true if check_cmd.call("gh", "gh", false)
+  
+  puts
+  if has_core_missing
+    puts Rainbow("Some core dependencies are missing! Please install them for the program to function properly.").red.bright.bold
+  elsif has_dev_missing
+    puts Rainbow("Core dependencies satisfied. Some optional development tools (git/gh) are missing.").yellow.bold
   else
-    puts Rainbow("All dependencies are successfully satisfied!").green.bold
+    puts Rainbow("All dependencies (both core and optional development tools) are satisfied!").green.bold
   end
 end
 

@@ -831,7 +831,7 @@ class TestMyCal < Minitest::Test
         assert_match /Checking Program Dependencies/, out
         assert_match /Rainbow Ruby Gem: Installed/, out
         assert_match /System Command 'python3': Installed/, out
-        assert_match /All dependencies are successfully satisfied!/, out
+        assert_match /All dependencies \(both core and optional development tools\) are satisfied!/, out
       end
     end
   end
@@ -847,7 +847,7 @@ class TestMyCal < Minitest::Test
         assert_match /System Command 'python3':.*Missing/, out
         assert_match /To fix: Run 'sudo apt install python3'/, out
         assert_match /To fix: Run 'sudo gem install rainbow'/, out
-        assert_match /Some dependencies are missing/, out
+        assert_match /Some core dependencies are missing!/, out
       end
     end
   end
